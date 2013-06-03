@@ -1,17 +1,17 @@
-import google_services
+import googleInit
 
 def show(parameter):
 	print "calendar: "+parameter
 	
 	
 def add():
-	global google_services
+	global googleInit
 	# display calender list
 	page_token = None
 	count = 0
 	calendars = []
 	while True:
-		calendar_list = google_services.service.calendarList().list(pageToken=page_token).execute()
+		calendar_list = googleInit.service.calendarList().list(pageToken=page_token).execute()
 		if calendar_list['items']:
 			for calendar_list_entry in calendar_list['items']:
 				calendars.append(calendar_list_entry['id'])
@@ -33,7 +33,7 @@ def update(con, parameter, parentID):
 	page_token = None
 	online_items = []
 	while True:
-		events = google_services.service.events().list(calendarId=calendarID, pageToken=page_token).execute()
+		events = googleInit.service.events().list(calendarId=calendarID, pageToken=page_token).execute()
 		if events['items']:
 			for event in events['items']:
 				parameter = str(calendarID)+"$$"+str(event['id'])

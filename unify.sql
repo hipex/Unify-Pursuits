@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Jun 03, 2013 at 01:22 PM
+-- Generation Time: Jun 03, 2013 at 03:54 PM
 -- Server version: 5.5.31
 -- PHP Version: 5.4.15
 
@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS `items` (
   `parameter` varchar(100) DEFAULT NULL,
   `parentID` int(11) DEFAULT NULL,
   `doUpdate` tinyint(1) NOT NULL DEFAULT '1',
-  `lastUpdate` datetime NOT NULL,
   PRIMARY KEY (`itemID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
@@ -47,7 +46,7 @@ CREATE TABLE IF NOT EXISTS `services` (
   `name` varchar(100) DEFAULT NULL,
   `module` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`serviceID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=6 ;
 
 --
 -- Dumping data for table `services`
@@ -57,7 +56,9 @@ INSERT INTO `services` (`serviceID`, `name`, `module`) VALUES
 (0, 'group', 'group'),
 (1, 'gmail', 'gmail'),
 (2, 'gcal appointment', 'gcal_appointment'),
-(3, 'gcal calendar', 'gcal_calendar');
+(3, 'gcal calendar', 'gcal_calendar'),
+(4, 'evernote notebook', 'evernote_notebook'),
+(5, 'evernote note', 'evernote_note');
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
