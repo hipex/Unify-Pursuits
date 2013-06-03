@@ -25,4 +25,4 @@ http = httplib2.Http()
 http = credentials.authorize(http)
 service = build(serviceName='calendar', version='v3', http=http,
 	   developerKey=passwords.developerKey)
-			   
+

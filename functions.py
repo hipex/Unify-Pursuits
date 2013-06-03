@@ -25,13 +25,13 @@ def ask(con):
 	if answer == 'q' or answer == 'g' or answer == 'a' or answer == 's' or answer == 'u' or answer == 'c':
 		return answer
 	
-	elif rows[0]:
+	elif rows[0][0] == 1:
 		# item exists
 		return int(answer)
 	
 	else:
 		# no command, no item. Print error
-		print "wrong answer"
+		print "wrong answer, choose itemID or command"
 		return ask(con)
 
 # end ask()
@@ -43,11 +43,11 @@ def getParent(con, itemID):
 	cur.execute("SELECT parentID FROM items WHERE itemID='"+str(itemID)+"'")
 	rows = cur.fetchall()
 
-	if len(rows) == 1:
+	if len(rows) > 0:
 		parentID = rows[0][0]
 		return parentID
 	else: 
-		return "Item does not exist"
+		return False
 	
 # end getParent()
 
@@ -64,7 +64,7 @@ def showservices(con):
 # end showservices()
 
 # add a new item to the database
-def additem(con, modules, ADDparent="undefined"):
+def addItem(con, modules, ADDparent="undefined"):
 	print "add item"
 	
 	if ADDparent == "undefined":
@@ -96,41 +96,43 @@ def additem(con, modules, ADDparent="undefined"):
 	
 		return True
 	
-# end additem()	
+# end addItem()	
 
 
 # show an item
 def showItem(con, modules, itemID):
-
 	cur = con.cursor()
 	cur.execute("SELECT * FROM items WHERE itemID='"+str(itemID)+"'")
 	rows = cur.fetchall()
 	
-	if len(rows) == 0:
-		print "this item does not exist"
-	
-	serviceID = rows[0][1]
-	parameter = rows[0][2]
+	if len(rows) > 0:
+		serviceID = rows[0][1]
+		parameter = rows[0][2]
 	
 	
-	cur = con.cursor()
-	cur.execute("SELECT * FROM services WHERE serviceID='"+str(serviceID)+"'")
-	rows = cur.fetchall()
+		cur = con.cursor()
+		cur.execute("SELECT * FROM services WHERE serviceID='"+str(serviceID)+"'")
+		rows = cur.fetchall()
 	
-	serviceModule = rows[0][2]
+		serviceModule = rows[0][2]
 	
-	module = getattr(modules, serviceModule)
-	module.show(parameter)
+		module = getattr(modules, serviceModule)
+		module.show(parameter)
 
-	print "========== CHILDREN ==========="
-	showItemsByParent(con, itemID)
-
+		print "========== CHILDREN ==========="
+		showItemsByParent(con, modules, itemID)
+		
+		return True
+		
+	else:
+		return False
 # end showItem()
 
 # show items children of specified parent
-def showItemsByParent(con, parentID=0):
+def showItemsByParent(con, modules, parentID=0):
 	cur = con.cursor()
-	cur.execute("SELECT * FROM items WHERE parentID='"+str(parentID)+"' ORDER BY serviceID ASC")
+	query = "SELECT items.itemID, services.serviceID, items.parameter, items.parentID, services.module, services.name FROM items INNER JOIN services ON items.serviceID=services.serviceID  WHERE parentID='"+str(parentID)+"' ORDER BY serviceID ASC"
+	cur.execute(query)
 	rows = cur.fetchall()
 	
 	if len(rows) == 0: 
@@ -141,16 +143,13 @@ def showItemsByParent(con, parentID=0):
 			itemID = value[0]
 			serviceID = value[1]
 			parameter = value[2]
-			groupID = value[3]
+			parentID = value[3]
+			serviceModule = value[4]
+			serviceName = value[5]
 			
-			curinfo = con.cursor()
-			curinfo.execute("SELECT name FROM services WHERE serviceID='"+str(serviceID)+"'")
-			serviceinfo = curinfo.fetchall()
-			
-			
-			print "++ item: "+str(itemID)
-			print "service: "+str(serviceinfo[0][0])
-			print "parameter: "+str(parameter)	
+			print "++ "+serviceName+": "+str(itemID)	
+			module = getattr(modules, serviceModule)
+			module.show(parameter)
 			
 # end showItemsByParent()
 
