@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: May 30, 2013 at 04:51 PM
+-- Generation Time: Jun 03, 2013 at 01:22 PM
 -- Server version: 5.5.31
 -- PHP Version: 5.4.15
 
@@ -31,28 +31,9 @@ CREATE TABLE IF NOT EXISTS `items` (
   `serviceID` int(11) DEFAULT NULL,
   `parameter` varchar(100) DEFAULT NULL,
   `parentID` int(11) DEFAULT NULL,
+  `doUpdate` tinyint(1) NOT NULL DEFAULT '1',
+  `lastUpdate` datetime NOT NULL,
   PRIMARY KEY (`itemID`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=2 ;
-
---
--- Dumping data for table `items`
---
-
-INSERT INTO `items` (`itemID`, `serviceID`, `parameter`, `parentID`) VALUES
-(0, 0, 'hoofdgroep', 0);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `labels`
---
-
-CREATE TABLE IF NOT EXISTS `labels` (
-  `labelID` int(11) NOT NULL AUTO_INCREMENT,
-  `serviceID` int(11) NOT NULL,
-  `parameter` varchar(100) NOT NULL,
-  `lastupdate` datetime NOT NULL,
-  PRIMARY KEY (`labelID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
@@ -75,7 +56,8 @@ CREATE TABLE IF NOT EXISTS `services` (
 INSERT INTO `services` (`serviceID`, `name`, `module`) VALUES
 (0, 'group', 'group'),
 (1, 'gmail', 'gmail'),
-(2, 'calendar', 'gcal');
+(2, 'gcal appointment', 'gcal_appointment'),
+(3, 'gcal calendar', 'gcal_calendar');
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

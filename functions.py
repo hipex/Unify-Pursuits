@@ -3,7 +3,7 @@
 # show header
 def header(os, message=False):
 	os.system('clear')
-	print "commands: q=quit, s=show all g=show groups, u=parent, a=add item"
+	print "commands: q=quit, s=show all g=show groups, u=parent, a=add item, c=update items"
 	
 	if message != False:
 		print message
@@ -22,7 +22,7 @@ def ask(con):
 	
 	
 	# check if correct command
-	if answer == 'q' or answer == 'g' or answer == 'a' or answer == 's' or answer == 'u':
+	if answer == 'q' or answer == 'g' or answer == 'a' or answer == 's' or answer == 'u' or answer == 'c':
 		return answer
 	
 	elif rows[0]:
@@ -191,9 +191,56 @@ def showItemsAsTree(con, parent=0, service="all"):
 
 # end showItemsAsTree()
 
+def updateItems(mdb, con, modules):
+	cur = con.cursor(mdb.cursors.DictCursor)
+	cur.execute("SELECT items.itemID, items.parameter, services.serviceID, services.module FROM items INNER JOIN services ON items.serviceID=services.serviceID  WHERE items.doUpdate = '1'")
+	rows = cur.fetchall()
 	
+	inserts = []
+	deletes = []
 	
-	
-	
-	
+	count = 0
+	for label in rows:
+		
+		module = getattr(modules, str(label['module']))
+		answer = module.update(con, label['parameter'], label['itemID'])
+		if answer != False:
+			ChildServiceModule = answer[0]
+			inserts = answer[1]
+			deletes = answer[2]
+			
+			
+			cur = con.cursor()
+			cur.execute("SELECT serviceID FROM services WHERE module='"+ChildServiceModule+"'")
+			ChildServiceID = cur.fetchall()[0][0]
+			
+			# do inserts
+			insert_query_parts = []
+			for parameter in inserts:
+				insert_query_parts.append("('"+str(ChildServiceID)+"', '"+str(parameter)+"', '"+str(label['itemID'])+"')")
+				count=count+1
+		
+			if insert_query_parts != []:
+				insert_query = "INSERT INTO items (serviceID, parameter, parentID) VALUES %s" %  ",".join(insert_query_parts)
+		
+				cur = con.cursor()
+				cur.execute(insert_query)
+			
+			# do deletes
+			delete_query_parts = []
+			for parameter in deletes:
+				delete_query_parts.append("'"+str(parameter)+"'")
+				count=count+1
+				
+			if delete_query_parts != []:
+				delete_query = "DELETE FROM items WHERE serviceID='"+str(ChildServiceID)+"' AND parameter IN (%s)" %  ",".join(delete_query_parts)
+				
+				cur = con.cursor()
+				cur.execute(delete_query)
+			
+	return count
+# end updateItems
+
+
+
 

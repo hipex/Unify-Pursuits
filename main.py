@@ -32,8 +32,8 @@ while True:
 	
 	elif answer == 'a':
 		additem(con, modules, CURRENTitem)
-		header(os, "item added")
-	
+		header(os, "item added, you should run update items")
+		
 	
 	elif answer == 's':
 		showItemsAsTree(con)
@@ -47,6 +47,12 @@ while True:
 			CURRENTitem = result
 			showItem(con, modules, CURRENTitem)
 	
+	elif answer == 'c':
+		result = updateItems(mdb, con, modules)
+		header(os, "updated: "+str(result)+" rows")	
+		
+		
+			
 	else:
 		cur = con.cursor()
 		cur.execute("SELECT EXISTS(SELECT 1 FROM items WHERE itemID='"+str(answer)+"')")
