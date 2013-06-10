@@ -1,11 +1,20 @@
 import evernoteInit
-
+childServiceModule = 'evernote_note'
 
 def show(parameter):
 	print "notebook: "+parameter
+
+def getTitle(parameter):
+	global evernoteInit
+	
+	curnotebook = evernoteInit.note_store.getNotebook(evernoteInit.authToken, parameter)
 	
 	
-def add():
+	return curnotebook.name
+	
+
+
+def add(parentParameter):
 	global evernoteInit
 	# display calender list
 	page_token = None
@@ -25,8 +34,9 @@ def add():
 	
 	return [notebookGUID]
 
-def update(con, parameter, parentID):
+def update(mdb, parameter, parentID):
 	global evernoteInit
+	global childServiceModule
 	
 	notebookGUID = parameter
 	
@@ -37,14 +47,16 @@ def update(con, parameter, parentID):
 	notelist = evernoteInit.note_store.findNotesMetadata(evernoteInit.authToken,filter,0,10,spec)
 
 	for note in notelist.notes:
-		online_items.append(note.guid)	
+		online_items.append("'"+str(note.guid)+"'")	
 	
-	cur = con.cursor()
-	cur.execute("SELECT parameter FROM items WHERE parentID='"+str(parentID)+"'")
-	offline_items = cur.fetchall()
-	offline_items = [val for subl in offline_items for val in subl]
-		
-	inserts = [x for x in online_items if x not in offline_items]
-	deletes = [x for x in offline_items if x not in online_items]
+	query = "DELETE FROM items \
+	WHERE parentID='"+str(parentID)+"' \
+	AND serviceID = (SELECT serviceID FROM services WHERE serviceModule='"+str(childServiceModule)+"')  \
+	AND parameter NOT IN ("+','.join(online_items)+")"
 	
-	return ["evernote_note", inserts, deletes]
+	print query
+	
+	cur = mdb.con.cursor()
+	cur.execute(query)
+	
+	return cur.rowcount

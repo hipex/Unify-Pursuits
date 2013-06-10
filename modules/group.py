@@ -1,10 +1,14 @@
 def show(parameter):
 	print "This is a group called: "+parameter
 	
-	
+
+def getTitle(parameter):
+	return parameter
+
+
 def add():
 	parameter = [raw_input("choose name: ")]
 	return parameter
 	
-def update(con, parameter, parentID):
+def update(mdb, parameter, parentID):
 	return False
