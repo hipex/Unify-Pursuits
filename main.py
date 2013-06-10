@@ -19,9 +19,10 @@ header(os)
 
 
 CURRENTitem = 0
+virtualitems = []
 
 while True:
-	answer = ask(mdb)
+	answer = ask(mdb, virtualitems)
 	header(os)
 	
 	## navigate commands
@@ -41,11 +42,11 @@ while True:
 			
 	elif answer == 'g':
 		# show groups
-		showItemsAsTree(mdb, 0, 0)
+		showItemsAsTree(mdb, modules, 0, 0)
 			
 	elif answer == 's':
 		# show all
-		showItemsAsTree(mdb)
+		showItemsAsTree(mdb, modules)
 	
 	
 	
@@ -104,10 +105,17 @@ while True:
 		else:
 			header(os, "Somthing went wrong")
 		
-					
+	elif answer in virtualitems:
+		item = virtualitems[answer]
+		showItem(mdb, modules, item, True)
+	
+		
 	else:
 		# itemID
-		result = showItem(mdb, modules, answer)
+		answer = showItem(mdb, modules, answer)
+		result=answer[0]
+		virtualitems = answer[1]
+		
 		if result == "error-item":
 			header(os, "this item does not exist")
 		else: 

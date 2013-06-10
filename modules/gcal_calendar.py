@@ -121,7 +121,7 @@ def getVirtualItems(parameter, itemID, serviceID, serviceTitle):
 		if events['items']:
 			for event in events['items']:
 				parameter = str(googleCalendarId)+"$$"+str(event['id'])
-				item = {"itemID":"virtual??"+parameter, "serviceID": serviceID, "parentID": itemID, "serviceModule": childServiceModule, "serviceTitle": "gcal appointment", "parameter":parameter}
+				item = {"itemID":"virtual", "parentServiceID": serviceID, "parentID": itemID, "serviceModule": childServiceModule, "serviceTitle": "gcal appointment", "parameter":parameter}
 				items.append(item)		
 								
 		page_token = events.get('nextPageToken')

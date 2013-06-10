@@ -6,7 +6,8 @@ def getTitle(parameter):
 	return parameter
 
 
-def add():
+def add(parentParameter):
+	
 	parameter = [raw_input("choose name: ")]
 	return parameter
 	
