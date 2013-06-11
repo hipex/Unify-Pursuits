@@ -1,4 +1,4 @@
-def show(parameter):
+def showHeader(parameter):
 	print "This is a group called: "+parameter
 	
 
@@ -12,4 +12,4 @@ def add(parentParameter):
 	return parameter
 	
 def update(mdb, parameter, parentID):
-	return False
+	return 'none'

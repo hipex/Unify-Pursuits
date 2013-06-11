@@ -1,6 +1,6 @@
 import evernoteInit
 
-def show(parameter):
+def showHeader(parameter):
 	global evernoteInit
 
 	note = evernoteInit.note_store.getNote(evernoteInit.authToken, parameter, True, False, False, False)
@@ -29,5 +29,12 @@ def add(parentParameter):
 	parameter = raw_input("choose parameter: ")
 	return [parameter]
 
-def update(mdb, parameter, parentID):
-	return False
+def update(mdb, parameter, itemID):
+	global evernoteInit
+	
+	for note in evernoteInit.note_store:
+		if note.guid == parameter:
+			return 'none'
+	
+	# note not found in online list
+	return itemID

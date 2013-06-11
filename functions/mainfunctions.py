@@ -31,22 +31,30 @@ def ask(mdb, virtualitems):
 	else:
 		# no command, no item. Print error
 		print "wrong answer, choose itemID or command"
-		return ask(mdb)
+		return ask(mdb, virtualitems)
 
 # end ask()
 
 # Get a parents item from the database
-def getParent(mdb, itemID):
+def getParent(mdb, CURRENTitem):
+	if CURRENTitem[1] != "none":
+		# currently in virtual, parent already stored in CURRENTitem
+		CURRENTitem[1] = "none"
+		
+	else:
+		itemID = CURRENTitem[0]
+	
+		# get parentID and check if the row exists
+		cur = mdb.con.cursor()
+		cur.execute("SELECT itemID FROM items WHERE itemID=(SELECT parentID FROM items WHERE itemID='"+str(itemID)+"')")
+		rows = cur.fetchone()
 
-	cur = mdb.con.cursor()
-	cur.execute("SELECT parentID FROM items WHERE itemID='"+str(itemID)+"'")
-	rows = cur.fetchall()
-
-	if len(rows) > 0:
-		parentID = rows[0][0]
-		return parentID
-	else: 
-		return "error-item"
+		if not rows or len(rows) == 0:
+			return "error-item"
+		else:
+			CURRENTitem[0] = rows[0]
+	
+	return CURRENTitem
 	
 # end getParent()
 

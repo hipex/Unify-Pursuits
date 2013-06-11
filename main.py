@@ -18,10 +18,11 @@ mdb.con.autocommit(True)
 header(os)
 
 
-CURRENTitem = 0
-virtualitems = []
+CURRENTitem = [0, "none"]
+virtualitems = {}
 
 while True:
+
 	answer = ask(mdb, virtualitems)
 	header(os)
 	
@@ -30,15 +31,7 @@ while True:
 		# quit
 		break
 	
-	elif answer == 'u':
-		# go to parent
-		result = getParent(mdb, CURRENTitem)
-
-		if result == "error-item":
-			header(os, "no higher group exists")
-		else:
-			CURRENTitem = result
-			showItem(mdb, modules, CURRENTitem)
+	
 			
 	elif answer == 'g':
 		# show groups
@@ -53,7 +46,7 @@ while True:
 	## item commands
 	elif answer == 'ia':
 		# add item
-		addItem(mdb, modules, CURRENTitem)
+		addItem(mdb, modules, CURRENTitem, virtualitems)
 		result = updateItems(mdb, modules)
 		header(os, "item added, update affected: "+str(result)+" rows")
 		
@@ -79,7 +72,7 @@ while True:
 	## widget commands
 	elif answer == 'wa':
 		# add widget
-		result = addWidget(mdb, modules, CURRENTitem)
+		result = addWidget(mdb, modules, CURRENTitem[0])
 		
 		if result == True:
 			header(os, "Widget created and items added")
@@ -90,7 +83,7 @@ while True:
 	
 	elif answer == 'wr':
 		# remove widget
-		result = removeWidget(mdb, modules, CURRENTitem)
+		result = removeWidget(mdb, modules, CURRENTitem[0])
 		if result:
 			header(os, "Widget removed")
 		else:
@@ -98,28 +91,44 @@ while True:
 	
 	elif answer == 'wu':
 		# update or alter widget
-		result = alterWidget(mdb, modules, CURRENTitem)
+		result = alterWidget(mdb, modules, CURRENTitem[0])
 		
 		if result == True:
 			header(os, "Done with widget")
 		else:
 			header(os, "Somthing went wrong")
-		
-	elif answer in virtualitems:
-		item = virtualitems[answer]
-		showItem(mdb, modules, item, True)
-	
-		
+			
 	else:
-		# itemID
-		answer = showItem(mdb, modules, answer)
+		# all commands that show itemID, up or virtual id
+		
+		if answer == 'u':
+			# go to parent
+	
+			result = getParent(mdb, CURRENTitem)
+
+			if result == "error-item":
+				header(os, "no higher group exists")
+			else:
+				CURRENTitem = result
+				
+				
+				
+		elif answer in virtualitems:
+			# requested virtual item
+			CURRENTitem[1] = answer
+			
+			
+		else:
+			# requested database item
+			CURRENTitem[0] = answer
+			CURRENTitem[1] = "none"
+		
+		answer = showItem(mdb, modules, CURRENTitem, virtualitems)
 		result=answer[0]
 		virtualitems = answer[1]
 		
 		if result == "error-item":
 			header(os, "this item does not exist")
-		else: 
-			CURRENTitem = result
 # end while
 
 mdb.con.close()

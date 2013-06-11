@@ -1,7 +1,7 @@
 import evernoteInit
 childServiceModule = 'evernote_note'
 
-def show(parameter):
+def showHeader(parameter):
 	print "notebook: "+parameter
 
 def getTitle(parameter):
@@ -13,6 +13,22 @@ def getTitle(parameter):
 	return curnotebook.name
 	
 
+def getVirtualItems(parentParameter, parentItemID, parentServiceID, parentServiceTitle, childServiceID, childServiceModule):
+	items = []
+	
+	notebookGUID = parentParameter
+	
+	filter = evernoteInit.NoteStoreTypes.NoteFilter()
+	filter.notebookGuid = notebookGUID
+	spec = evernoteInit.NoteStoreTypes.NotesMetadataResultSpec()
+	notelist = evernoteInit.note_store.findNotesMetadata(evernoteInit.authToken,filter,0,10,spec)
+
+	for note in notelist.notes:
+		parameter = note.guid
+		item = {"itemID":"virtual", "parentServiceID": parentServiceID, "parentID": parentItemID, "serviceID": childServiceID, "serviceModule": childServiceModule, "serviceTitle": "evernote note", "parameter":parameter}
+		items.append(item)
+	
+	return items
 
 def add(parentParameter):
 	global evernoteInit
@@ -33,30 +49,30 @@ def add(parentParameter):
 	notebookGUID = notebooks[notebookno]
 	
 	return [notebookGUID]
-
-def update(mdb, parameter, parentID):
+	
+	
+def remove(parameter):
 	global evernoteInit
-	global childServiceModule
 	
-	notebookGUID = parameter
-	
-	online_items = []
-	filter = evernoteInit.NoteStoreTypes.NoteFilter()
-	filter.notebookGuid = notebookGUID
-	spec = evernoteInit.NoteStoreTypes.NotesMetadataResultSpec()
-	notelist = evernoteInit.note_store.findNotesMetadata(evernoteInit.authToken,filter,0,10,spec)
+	evernoteInit.note_store.expungeNotebook(evernoteInit.authToken, parameter)
+	return True
 
-	for note in notelist.notes:
-		online_items.append("'"+str(note.guid)+"'")	
+
+def update(mdb, parameter, itemID):
+	global evernoteInit
 	
-	query = "DELETE FROM items \
-	WHERE parentID='"+str(parentID)+"' \
-	AND serviceID = (SELECT serviceID FROM services WHERE serviceModule='"+str(childServiceModule)+"')  \
-	AND parameter NOT IN ("+','.join(online_items)+")"
+	notebooklist = evernoteInit.note_store.listNotebooks(evernoteInit.authToken)
 	
-	print query
+	for notebook in notebooklist:
+		if notebook.guid == parameter:
+			return 'none'
 	
-	cur = mdb.con.cursor()
-	cur.execute(query)
+	# notebook non existing
+	cur = mdb.con.cursor(mdb.cursors.DictCursor)
+	cur.execute("DELETE FROM items WHERE itemID='"+str(itemID)+"'")
+
+	return itemID
 	
-	return cur.rowcount
+	
+	
+	

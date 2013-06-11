@@ -1,6 +1,6 @@
 import googleInit
 
-def show(parameter):
+def showHeader(parameter):
 	global googleInit
 	
 	parameter_part = parameter.partition("$$")
@@ -8,7 +8,9 @@ def show(parameter):
 	eventId=parameter_part[2]
 	
 	event = googleInit.service.events().get(calendarId=calendarId, eventId=eventId).execute()
-	print event['summary']
+	print "gcal event: "+event['summary']
+
+
 	
 def getTitle(parameter):
 	global googleInit 
@@ -110,8 +112,24 @@ def remove(parameter):
 	
 	return True
 
-def update(mdb, parameter, parentID):
-	# TODO: check if offline database item still occours on server
+def update(mdb, parameter, itemID):
+	global googleInit
 	
-	return 0
+	parameter_part = parameter.partition("$$")
+	calendarId=parameter_part[0]
+	eventId=parameter_part[2]
+	
+	page_token = None
+	while True:
+		events = googleInit.service.events().list(calendarId=calendarId, pageToken=page_token).execute()
+		if events['items']:
+			for event in events['items']:
+				if event['id'] == eventId:
+					return 'none'
+		page_token = events.get('nextPageToken')
+		if not page_token:
+			break
+	
+	
+	return itemID
 

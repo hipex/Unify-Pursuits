@@ -12,22 +12,29 @@ def showservices(mdb):
 
 
 def getItemsByParent(mdb, modules, parentID):
+	# database items
 	cur = mdb.con.cursor(mdb.cursors.DictCursor)
 	query = "SELECT items.itemID, services.serviceID, items.parameter, items.parentID, services.serviceModule, services.serviceTitle FROM items INNER JOIN services ON items.serviceID=services.serviceID  WHERE parentID='"+str(parentID)+"' ORDER BY serviceID ASC"
 	cur.execute(query)
 	items = list(cur.fetchall())
 	
+	
+	# virtual items
 	cur = mdb.con.cursor(mdb.cursors.DictCursor)
 	query = "SELECT items.itemID, items.parameter, items.serviceID, services.serviceTitle, services.serviceModule FROM items \
 			 JOIN services ON items.serviceID=services.serviceID \
 			 WHERE items.itemID='"+str(parentID)+"'"
-	cur.execute(query)
+	cur.execute(query) # get parent data
 	parent = cur.fetchone()
 	
 	if parent:
+		cur = mdb.con.cursor(mdb.cursors.DictCursor)
+		query = "SELECT serviceID, serviceModule FROM services WHERE parentServiceID='"+str(parent['serviceID'])+"'"
+		cur.execute(query) # get parent data
+		child = cur.fetchone()
 		module = getattr(modules, parent['serviceModule'])
 		if hasattr(module, 'getVirtualItems'):
-			virtualItems = module.getVirtualItems(parent['parameter'], parent['serviceID'], parent['serviceTitle'], parent['itemID'])
+			virtualItems = module.getVirtualItems(parent['parameter'], parent['serviceID'], parent['serviceTitle'], parent['itemID'], child['serviceID'], child['serviceModule'])
 			items.extend(virtualItems)
 	
 	return items
@@ -57,13 +64,26 @@ def showItemsAsTree(mdb, modules, parent=0, service="all", level=0):
 			level=level-1
 
 # add a new item to the database
-def addItem(mdb, modules, ADDparent="undefined"):
+def addItem(mdb, modules, CURRENTitem="undefined", virtualitems=[]):
 	print "add item"
 	
-	if ADDparent == "undefined":
+	if CURRENTitem[0] == "undefined":
 		showItemsAsTree(mdb, modules)
 		ADDparent = int(raw_input("choose parentID: "))
+	
+	elif CURRENTitem[1] != "none":
+		# virtual item, create database entry
+		parent = virtualitems[CURRENTitem[1]]
+		
+		cur = mdb.con.cursor(mdb.cursors.DictCursor)
+		cur.execute("INSERT INTO items (serviceID, parameter, parentID) VALUES \
+					 ('"+str(parent['serviceID'])+"', '"+str(parent['parameter'])+"', '"+str(parent['parentID'])+"')")
+		ADDparent = cur.lastrowid
+		
+		print "add to virtual item: "+str(CURRENTitem[1]['parameter'])+" which is now: "+str(ADDparent)
+		
 	else:
+		ADDparent = CURRENTitem[0]
 		print "add to parent: "+str(ADDparent)
 	
 	showservices(mdb)
@@ -113,35 +133,37 @@ def addItem(mdb, modules, ADDparent="undefined"):
 
 
 # show an item
-def showItem(mdb, modules, itemID, isvirtual=False):
+def showItem(mdb, modules, CURRENTitem, virtualitems={}):
 	
-	if isvirtual == True:
-		item = itemID
+	if CURRENTitem[1] != "none":
+		# virtual item
+		item = virtualitems[CURRENTitem[1]]
 		
 	
 	else:
+		# database item
 		cur = mdb.con.cursor(mdb.cursors.DictCursor)
-		cur.execute("SELECT items.itemID, items.serviceID, items.parameter, services.serviceModule, services.serviceTitle FROM items INNER JOIN services ON items.serviceID=services.serviceID WHERE itemID='"+str(itemID)+"'")
+		cur.execute("SELECT items.itemID, items.serviceID, items.parameter, services.serviceModule, services.serviceTitle FROM items INNER JOIN services ON items.serviceID=services.serviceID WHERE itemID='"+str(CURRENTitem[0])+"'")
 		item = cur.fetchone()
 		if len(item) == 0:
 			return "error-item"
 	
 
 	module = getattr(modules, item['serviceModule'])
-	#module.showHeader(item['parameter'])
+	# show header via module
+	module.showHeader(item['parameter'])
 	
-	print "show header from::"
-	print item
-	
-	if isvirtual == True:
-		return True
+	if CURRENTitem[1] != "none":
+		# virutal items have no stuff on page
+		return [True,CURRENTitem]
+		
 	else: 
 		print "========== WIDGETS ==========="
 	
 		cur = mdb.con.cursor(mdb.cursors.DictCursor)
 		cur.execute("SELECT widgets.widgetID, widgets.preferences, widgettypes.widgettypeModule \
 		FROM widgets, widgettypes \
-		WHERE widgets.parentID='"+str(itemID)+"' \
+		WHERE widgets.parentID='"+str(item['itemID'])+"' \
 		AND widgets.widgettypeID = widgettypes.widgettypeID ")
 		widgets = cur.fetchall()
 	
@@ -152,7 +174,7 @@ def showItem(mdb, modules, itemID, isvirtual=False):
 	
 		print "=========== SUB ITEMS =========="
 	
-		subItems = getItemsByParent(mdb, modules, itemID)
+		subItems = getItemsByParent(mdb, modules, item['itemID'])
 		virtualitems = {}
 		
 		if len(subItems) == 0: 
@@ -164,7 +186,6 @@ def showItem(mdb, modules, itemID, isvirtual=False):
 		
 			for item in subItems:
 				print "++ "+str(item['serviceTitle'])+": ",
-			
 			
 				if item['itemID'] == 'virtual':
 					virtualitems['v'+str(virtualcount)] = item
@@ -178,7 +199,7 @@ def showItem(mdb, modules, itemID, isvirtual=False):
 				module = getattr(modules, item['serviceModule'])
 				print module.getTitle(item['parameter'])
 	
-		return [itemID, virtualitems]
+		return [item['itemID'], virtualitems]
 # end showItem()
 
 
@@ -191,44 +212,69 @@ def updateItems(mdb, modules):
 	cur.execute("SELECT items.itemID, items.parameter, services.serviceID, services.serviceModule \
 				 FROM items, services \
 				 WHERE items.serviceID=services.serviceID")
-	rows = cur.fetchall()
+	items = cur.fetchall()
 	
 	count = 0
-	for label in rows:
+	
+	removequery_parts = []
+	for item in items:
 		
-		module = getattr(modules, str(label['serviceModule']))
-		rowcount = module.update(mdb, label['parameter'], label['itemID'])
-		count=count+rowcount
+		module = getattr(modules, str(item['serviceModule']))
+		result = module.update(mdb, item['parameter'], item['itemID'])
+
+		if result != 'none':
+			removequery_parts.append("'"+str(result)+"'")
+			count=count+1
+		
+	if removequery_parts != []:
+		cur = mdb.con.cursor(mdb.cursors.DictCursor)
+		query = "DELETE FROM items WHERE itemID IN ("+",".join(removequery_parts)+")"
+		cur.execute(query)
 	
 	return count
 # end updateItems
 
-def removeItem(mdb, modules, parentID):
+def removeItem(mdb, modules, CURRENTitem):
 	print "remove item"
 	
-	cur = mdb.con.cursor(mdb.cursors.DictCursor)
-	cur.execute("SELECT items.itemID, items.parameter, services.serviceModule \
-				 FROM items, services \
-				 WHERE items.serviceID=services.serviceID \
-				 AND parentID='"+str(parentID)+"'")
-	items = cur.fetchall()
+	# can only remove with database parent; no virtual since they don't have childs
+	parentID=CURRENTitem[0]
+	
+	items = getItemsByParent(mdb, modules, parentID)
+	
+	virtualcount = 0
+	virtualitems = {}
 	
 	print "c: cancel"
 	for item in items:
-		print item['serviceModule']
+
 		module = getattr(modules, str(item['serviceModule']))
 		itemTitle = module.getTitle(item['parameter'])
 		
-		print str(item['itemID'])+": "+itemTitle
+		if item['itemID'] == 'virtual':
+			virtualid = "v"+str(virtualcount)
+			print virtualid+": ",
+			virtualitems[virtualid] = item
+			
+			virtualcount=virtualcount+1
+		
+		else:
+			print str(item['itemID'])+": ",
+			
+		print item['serviceModule']+": "+itemTitle
 		
 	REMOVEitemID = raw_input("choose itemID to remove: ")
 	
 	if str(REMOVEitemID) == "c":
 		return "error-user"
 	else:
-		cur = mdb.con.cursor(mdb.cursors.DictCursor)
-		cur.execute("SELECT items.parameter, services.serviceModule FROM items, services WHERE items.serviceID=services.serviceID AND items.itemID='"+REMOVEitemID+"'")
-		item = cur.fetchone()
+		if REMOVEitemID in virtualitems:
+			item = virtualitems[REMOVEitemID]
+		
+		else:
+			cur = mdb.con.cursor(mdb.cursors.DictCursor)
+			cur.execute("SELECT items.parameter, services.serviceModule FROM items, services WHERE items.serviceID=services.serviceID AND items.itemID='"+REMOVEitemID+"'")
+			item = cur.fetchone()
 		
 		answer = raw_input("remove from server? ")
 		if answer == 'y' :
