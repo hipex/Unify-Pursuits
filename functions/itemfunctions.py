@@ -27,6 +27,8 @@ def getItemsByParent(mdb, modules, parentID):
 	cur.execute(query) # get parent data
 	parent = cur.fetchone()
 	
+	virtualitems = []
+	
 	if parent:
 		cur = mdb.con.cursor(mdb.cursors.DictCursor)
 		query = "SELECT serviceID, serviceModule FROM services WHERE parentServiceID='"+str(parent['serviceID'])+"'"
@@ -34,16 +36,21 @@ def getItemsByParent(mdb, modules, parentID):
 		child = cur.fetchone()
 		module = getattr(modules, parent['serviceModule'])
 		if hasattr(module, 'getVirtualItems'):
-			virtualItems = module.getVirtualItems(parent['parameter'], parent['serviceID'], parent['serviceTitle'], parent['itemID'], child['serviceID'], child['serviceModule'])
-			items.extend(virtualItems)
+			virtualItemlist = module.getVirtualItems(parent['parameter'], parent['itemID'], parent['serviceTitle'], parent['itemID'], child['serviceID'], child['serviceModule'])
+			virtualitems.extend(virtualItemlist)
 	
-	return items
+	return [items,virtualitems]
 
 # show items as a tree
 def showItemsAsTree(mdb, modules, parent=0, service="all", level=0):
 		
-	items = getItemsByParent(mdb, modules, parent)
-
+	result = getItemsByParent(mdb, modules, parent)
+	items = result[0]
+	virtualitems = result[1]
+	
+	items.extend(virtualitems)
+	
+	
 	# run through items with the parent
 	for item in items:
 		if service == 'all' or item['serviceID'] == service:
@@ -66,7 +73,7 @@ def showItemsAsTree(mdb, modules, parent=0, service="all", level=0):
 # add a new item to the database
 def addItem(mdb, modules, CURRENTitem="undefined", virtualitems=[]):
 	print "add item"
-	
+	print virtualitems
 	if CURRENTitem[0] == "undefined":
 		showItemsAsTree(mdb, modules)
 		ADDparent = int(raw_input("choose parentID: "))
@@ -80,7 +87,7 @@ def addItem(mdb, modules, CURRENTitem="undefined", virtualitems=[]):
 					 ('"+str(parent['serviceID'])+"', '"+str(parent['parameter'])+"', '"+str(parent['parentID'])+"')")
 		ADDparent = cur.lastrowid
 		
-		print "add to virtual item: "+str(CURRENTitem[1]['parameter'])+" which is now: "+str(ADDparent)
+		print "add to virtual item: "+str(CURRENTitem[1])+" which is now: "+str(ADDparent)
 		
 	else:
 		ADDparent = CURRENTitem[0]
@@ -121,7 +128,6 @@ def addItem(mdb, modules, CURRENTitem="undefined", virtualitems=[]):
 		ADDparameterlist = module.add(parentParameter)
 		
 		
-		
 		if parentChildMatch == False:
 			for ADDparameter in ADDparameterlist:
 				cur = mdb.con.cursor()
@@ -155,7 +161,7 @@ def showItem(mdb, modules, CURRENTitem, virtualitems={}):
 	
 	if CURRENTitem[1] != "none":
 		# virutal items have no stuff on page
-		return [True,CURRENTitem]
+		return [True,virtualitems]
 		
 	else: 
 		print "========== WIDGETS ==========="
@@ -174,31 +180,31 @@ def showItem(mdb, modules, CURRENTitem, virtualitems={}):
 	
 		print "=========== SUB ITEMS =========="
 	
-		subItems = getItemsByParent(mdb, modules, item['itemID'])
-		virtualitems = {}
+		result = getItemsByParent(mdb, modules, item['itemID'])
+		subitems=result[0]
+		virtualitems=result[1]
 		
-		if len(subItems) == 0: 
+		
+		if len(subitems)+len(virtualitems) == 0: 
 			print "er zijn geen items"
 		else:
 			# run through items with this parent
-			virtualcount = 0
-			
 		
-			for item in subItems:
-				print "++ "+str(item['serviceTitle'])+": ",
-			
-				if item['itemID'] == 'virtual':
-					virtualitems['v'+str(virtualcount)] = item
-				
-					print "virtual: v"+str(virtualcount)
-					virtualcount = virtualcount+1
-				
-				else:
-					print str(item['itemID'])
+			for item in subitems:
+				print "++ "+str(item['itemID'])+"; "+str(item['serviceTitle'])+": ",
 				
 				module = getattr(modules, item['serviceModule'])
 				print module.getTitle(item['parameter'])
-	
+			
+			if virtualitems != []:
+				print "virtualitems: "
+			
+				for no,item in enumerate(virtualitems):
+					print "++ v"+str(no)+"; "+str(item['serviceTitle'])+": ",
+				
+					module = getattr(modules, item['serviceModule'])
+					print module.getTitle(item['parameter'])
+				
 		return [item['itemID'], virtualitems]
 # end showItem()
 
@@ -240,10 +246,9 @@ def removeItem(mdb, modules, CURRENTitem):
 	# can only remove with database parent; no virtual since they don't have childs
 	parentID=CURRENTitem[0]
 	
-	items = getItemsByParent(mdb, modules, parentID)
-	
-	virtualcount = 0
-	virtualitems = {}
+	result = getItemsByParent(mdb, modules, parentID)
+	items=result[0]
+	virtualitems=result[1]
 	
 	print "c: cancel"
 	for item in items:
@@ -251,25 +256,26 @@ def removeItem(mdb, modules, CURRENTitem):
 		module = getattr(modules, str(item['serviceModule']))
 		itemTitle = module.getTitle(item['parameter'])
 		
-		if item['itemID'] == 'virtual':
-			virtualid = "v"+str(virtualcount)
-			print virtualid+": ",
-			virtualitems[virtualid] = item
-			
-			virtualcount=virtualcount+1
-		
-		else:
-			print str(item['itemID'])+": ",
+		print str(item['itemID'])+": ",
 			
 		print item['serviceModule']+": "+itemTitle
+	
+	
+	print "virtualitems:"
+	for no,item in enumerate(virtualitems):
+		module = getattr(modules, str(item['serviceModule']))
+		itemTitle = module.getTitle(item['parameter'])
+		
+		print "v"+str(no)+": "+itemTitle
+	
 		
 	REMOVEitemID = raw_input("choose itemID to remove: ")
 	
 	if str(REMOVEitemID) == "c":
 		return "error-user"
 	else:
-		if REMOVEitemID in virtualitems:
-			item = virtualitems[REMOVEitemID]
+		if str(REMOVEitemID)[0] == 'v':
+			item = virtualitems[str(REMOVEitemID)[1:]]
 		
 		else:
 			cur = mdb.con.cursor(mdb.cursors.DictCursor)

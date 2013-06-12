@@ -19,12 +19,15 @@ header(os)
 
 
 CURRENTitem = [0, "none"]
-virtualitems = {}
+virtualitems = []
 
 while True:
-
-	answer = ask(mdb, virtualitems)
+	
+	answer = ask(mdb)
+	
 	header(os)
+	
+	
 	
 	## navigate commands
 	if answer == 'q':
@@ -46,6 +49,7 @@ while True:
 	## item commands
 	elif answer == 'ia':
 		# add item
+		
 		addItem(mdb, modules, CURRENTitem, virtualitems)
 		result = updateItems(mdb, modules)
 		header(os, "item added, update affected: "+str(result)+" rows")
@@ -112,10 +116,12 @@ while True:
 				CURRENTitem = result
 				
 				
-				
-		elif answer in virtualitems:
+		# if answer starts with v:
+		elif str(answer)[0] == 'v':
 			# requested virtual item
-			CURRENTitem[1] = answer
+			
+			# strip the v
+			CURRENTitem[1] = int(answer[1:]) 
 			
 			
 		else:
@@ -124,8 +130,11 @@ while True:
 			CURRENTitem[1] = "none"
 		
 		answer = showItem(mdb, modules, CURRENTitem, virtualitems)
+
 		result=answer[0]
+		
 		virtualitems = answer[1]
+
 		
 		if result == "error-item":
 			header(os, "this item does not exist")

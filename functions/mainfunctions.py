@@ -8,7 +8,7 @@ def header(os, message=False):
 # end header
 
 # choose itemID or command
-def ask(mdb, virtualitems):
+def ask(mdb):
 	
 	# get input
 	answer = raw_input("choose itemID or command: ")
@@ -21,7 +21,10 @@ def ask(mdb, virtualitems):
 	commands = ['q', 's', 'g', 'u', 'ia', 'ir', 'iu', 'wa', 'wr', 'wu']
 	
 	# check if correct command
-	if answer in commands or answer in virtualitems:
+	if answer in commands:
+		return answer
+	
+	elif str(answer)[0]=='v':
 		return answer
 	
 	elif rows[0] == 1:
@@ -31,7 +34,7 @@ def ask(mdb, virtualitems):
 	else:
 		# no command, no item. Print error
 		print "wrong answer, choose itemID or command"
-		return ask(mdb, virtualitems)
+		return ask(mdb)
 
 # end ask()
 

@@ -32,9 +32,9 @@ def add(parentParameter):
 def update(mdb, parameter, itemID):
 	global evernoteInit
 	
-	for note in evernoteInit.note_store:
-		if note.guid == parameter:
-			return 'none'
+	#for note in evernoteInit.note_store:
+	#	if note.guid == parameter:
+	return 'none'
 	
 	# note not found in online list
 	return itemID
