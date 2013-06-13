@@ -1,6 +1,7 @@
 import passwords
 
 from evernote.api.client import EvernoteClient
+import evernote.edam.error.ttypes as errorTypes
 import evernote.edam.notestore.ttypes as NoteStoreTypes
 
 authToken=passwords.evernoteAuthToken

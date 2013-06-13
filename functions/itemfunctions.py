@@ -17,6 +17,7 @@ def getItemsByParent(mdb, modules, parentID):
 	query = "SELECT items.itemID, services.serviceID, items.parameter, items.parentID, services.serviceModule, services.serviceTitle FROM items INNER JOIN services ON items.serviceID=services.serviceID  WHERE parentID='"+str(parentID)+"' ORDER BY serviceID ASC"
 	cur.execute(query)
 	items = list(cur.fetchall())
+	itemparameters = tuple(x['parameter'] for x in items)
 	
 	
 	# virtual items
@@ -26,6 +27,8 @@ def getItemsByParent(mdb, modules, parentID):
 			 WHERE items.itemID='"+str(parentID)+"'"
 	cur.execute(query) # get parent data
 	parent = cur.fetchone()
+	
+	
 	
 	virtualitems = []
 	
@@ -38,6 +41,11 @@ def getItemsByParent(mdb, modules, parentID):
 		if hasattr(module, 'getVirtualItems'):
 			virtualItemlist = module.getVirtualItems(parent['parameter'], parent['itemID'], parent['serviceTitle'], parent['itemID'], child['serviceID'], child['serviceModule'])
 			virtualitems.extend(virtualItemlist)
+	
+	filteredVirtualitems = []
+	
+	virtualitems = [x for x in virtualitems if x['parameter'] not in itemparameters]
+	
 	
 	return [items,virtualitems]
 
@@ -73,7 +81,7 @@ def showItemsAsTree(mdb, modules, parent=0, service="all", level=0):
 # add a new item to the database
 def addItem(mdb, modules, CURRENTitem="undefined", virtualitems=[]):
 	print "add item"
-	print virtualitems
+
 	if CURRENTitem[0] == "undefined":
 		showItemsAsTree(mdb, modules)
 		ADDparent = int(raw_input("choose parentID: "))
@@ -214,16 +222,26 @@ def showItem(mdb, modules, CURRENTitem, virtualitems={}):
 # end showItemsAsTree()
 
 def updateItems(mdb, modules):
+	
+	
+		
+		
+		 
+				 
 	cur = mdb.con.cursor(mdb.cursors.DictCursor)
 	cur.execute("SELECT items.itemID, items.parameter, services.serviceID, services.serviceModule \
 				 FROM items, services \
 				 WHERE items.serviceID=services.serviceID")
 	items = cur.fetchall()
 	
+	
 	count = 0
 	
 	removequery_parts = []
 	for item in items:
+		
+				 
+		
 		
 		module = getattr(modules, str(item['serviceModule']))
 		result = module.update(mdb, item['parameter'], item['itemID'])
@@ -236,6 +254,16 @@ def updateItems(mdb, modules):
 		cur = mdb.con.cursor(mdb.cursors.DictCursor)
 		query = "DELETE FROM items WHERE itemID IN ("+",".join(removequery_parts)+")"
 		cur.execute(query)
+	
+	
+	# remove items where parentID is pointing no where
+	while True:
+		cur = mdb.con.cursor(mdb.cursors.DictCursor)
+		cur.execute("DELETE items FROM items LEFT JOIN items AS parent ON items.parentID = parent.itemID WHERE parent.itemID is NULL")
+		if cur.rowcount == 0:
+			break
+		else:
+			count=count+cur.rowcount
 	
 	return count
 # end updateItems
