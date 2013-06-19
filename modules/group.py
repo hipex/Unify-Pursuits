@@ -11,5 +11,5 @@ def add(parentParameter):
 	parameter = [raw_input("choose name: ")]
 	return parameter
 	
-def update(mdb, parameter, parentID):
-	return 'none'
+def check(parameter):
+	return True

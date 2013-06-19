@@ -1,5 +1,5 @@
 
-def show(mdb, modules, widgetID, preferences):
+def show(modules, items, widgetID, preferences):
 	print "show widget: "+str(widgetID)
 
 

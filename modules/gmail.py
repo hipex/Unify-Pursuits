@@ -8,5 +8,5 @@ def add():
 	parameter = raw_input("choose parameter: ")
 	return [parameter]
 
-def update(mdb, parameter, parentID):
-	return False
+def check(parameter):
+	return True

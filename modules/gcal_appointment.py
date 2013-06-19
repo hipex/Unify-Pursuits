@@ -22,7 +22,7 @@ def getTitle(parameter):
 	event = googleInit.service.events().get(calendarId=calendarId, eventId=eventId).execute()
 	return event['summary']
 
-def getCalendarItems(mdb, parameter):
+def getCalendarItems(parameter):
 	global googleInit 
 	
 	parameter_part = parameter.partition("$$")
@@ -112,7 +112,7 @@ def remove(parameter):
 	
 	return True
 
-def update(mdb, parameter, itemID):
+def check(parameter):
 	global googleInit
 	
 	parameter_part = parameter.partition("$$")
@@ -125,11 +125,11 @@ def update(mdb, parameter, itemID):
 		if events['items']:
 			for event in events['items']:
 				if event['id'] == eventId:
-					return 'none'
+					return True
 		page_token = events.get('nextPageToken')
 		if not page_token:
 			break
 	
 	
-	return itemID
+	return False
 

@@ -38,7 +38,7 @@ def remove(parameter):
 	googleInit.service.calendars().delete(parameter).execute()
 	return True
 
-def update(mdb, parameter, itemID):
+def check(parameter):
 	global googleInit
 	
 	
@@ -55,7 +55,7 @@ def update(mdb, parameter, itemID):
 	
 	# calendar is not existend online, remove from database
 	
-	return itemID
+	return True
 
 def getTitle(parameter):
 	global googleInit
@@ -63,10 +63,10 @@ def getTitle(parameter):
 	calendar_list_entry = googleInit.service.calendarList().get(calendarId=parameter).execute()
 	return calendar_list_entry['summary']
 
-def getVirtualItems(parentParameter, parentItemID, parentServiceID, parentServiceTitle, childServiceID, childServiceModule):
+def getVirtualItems(parameter, itemID, serviceID, childServiceID, childServiceModule):
 	global googleInit
 	
-	googleCalendarId = parentParameter
+	googleCalendarId = parameter
 	
 	page_token = None
 	items = []
@@ -74,8 +74,8 @@ def getVirtualItems(parentParameter, parentItemID, parentServiceID, parentServic
 		events = googleInit.service.events().list(calendarId=googleCalendarId, pageToken=page_token).execute()
 		if events['items']:
 			for event in events['items']:
-				parameter = str(googleCalendarId)+"$$"+str(event['id'])
-				item = {"itemID":"virtual", "parentServiceID": parentServiceID, "parentID": parentItemID, "serviceID": childServiceID, "serviceModule": childServiceModule, "serviceTitle": "gcal appointment", "parameter":parameter}
+				childParameter = str(googleCalendarId)+"$$"+str(event['id'])
+				item = {"itemID":"virtual", "ParentserviceID": serviceID, "parentID": itemID, "serviceID": childServiceID, "serviceModule": childServiceModule, "serviceTitle": "gcal appointment", "parameter":childParameter}
 				items.append(item)		
 								
 		page_token = events.get('nextPageToken')
@@ -84,14 +84,16 @@ def getVirtualItems(parentParameter, parentItemID, parentServiceID, parentServic
 
 	return items
 
-def getCalendarItems(mdb, calendarID):
+def getCalendarItems(parameter):
 	global googleInit
 	global time
+	
+	googleCalendarId = parameter
 	
 	page_token = None
 	items = []
 	while True:
-		events = googleInit.service.events().list(calendarId=calendarID, pageToken=page_token).execute()
+		events = googleInit.service.events().list(calendarId=googleCalendarId, pageToken=page_token).execute()
 		if events['items']:
 			for event in events['items']:
 				# work on: uniform timestamp of date and dateTime

@@ -1,7 +1,7 @@
 # show header
 def header(os, message=False):
 	os.system('clear')
-	print "commands: q=quit, s=show all g=show groups, u=parent, ia=item add, ir, item remove, iu=item update, wa=widget add, wr=widget remove, wu=widget update/alter"
+	print "commands: q=quit, s=show all, g=show groups, c=reload current, u=parent, ia=item add, ir=item remove, iu=item update, wa=widget add, wr=widget remove, wu=widget update/alter"
 	
 	if message != False:
 		print message
@@ -18,7 +18,7 @@ def ask(mdb):
 	cur.execute("SELECT EXISTS(SELECT 1 FROM items WHERE itemID='"+str(answer)+"')")
 	rows = cur.fetchone()
 	
-	commands = ['q', 's', 'g', 'u', 'ia', 'ir', 'iu', 'wa', 'wr', 'wu']
+	commands = ['q', 'c', 's', 'g', 'u', 'ia', 'ir', 'iu', 'wa', 'wr', 'wu']
 	
 	# check if correct command
 	if answer in commands:

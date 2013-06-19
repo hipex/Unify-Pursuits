@@ -1,4 +1,6 @@
 import evernoteInit
+from datetime import datetime
+
 childServiceModule = 'evernote_note'
 
 def showHeader(parameter):
@@ -13,7 +15,7 @@ def getTitle(parameter):
 	return curnotebook.name
 	
 
-def getVirtualItems(parentParameter, parentItemID, parentServiceID, parentServiceTitle, childServiceID, childServiceModule):
+def getVirtualItems(parentParameter, parentItemID, parentServiceID, childServiceID, childServiceModule):
 	items = []
 	
 	notebookGUID = parentParameter
@@ -29,6 +31,31 @@ def getVirtualItems(parentParameter, parentItemID, parentServiceID, parentServic
 		items.append(item)
 	
 	return items
+
+def getCalendarItems(notebookGUID):
+ 	# return only notes with reminder / todo date
+	global evernoteInit
+	global datetime
+	
+	items = []
+	filter = evernoteInit.NoteStoreTypes.NoteFilter()
+	filter.notebookGuid = notebookGUID
+	spec = evernoteInit.NoteStoreTypes.NotesMetadataResultSpec()
+	notelist = evernoteInit.note_store.findNotesMetadata(evernoteInit.authToken, filter,0,10,spec)
+	for note in notelist.notes:
+		noteinfo = evernoteInit.note_store.getNote(evernoteInit.authToken, note.guid, True, False, False, False)
+
+		if noteinfo.attributes.reminderTime != None:
+			noteTimestamp = noteinfo.attributes.reminderTime # given in miliseconds
+			
+			noteDatetime = datetime.fromtimestamp(noteTimestamp/1000).strftime('%Y-%m-%dT%H:%M:%S+01:00')
+			
+			item = {"start":noteDatetime, "end":noteDatetime, "summary":noteinfo.title}
+			items.append(item)
+
+	return items
+
+
 
 def add(parentParameter):
 	global evernoteInit
@@ -58,20 +85,16 @@ def remove(parameter):
 	return True
 
 
-def update(mdb, parameter, itemID):
+def check(parameter):
 	global evernoteInit
 	
 	notebooklist = evernoteInit.note_store.listNotebooks(evernoteInit.authToken)
 	
 	for notebook in notebooklist:
 		if notebook.guid == parameter:
-			return 'none'
+			return True
 	
-	# notebook non existing
-	cur = mdb.con.cursor(mdb.cursors.DictCursor)
-	cur.execute("DELETE FROM items WHERE itemID='"+str(itemID)+"'")
-
-	return itemID
+	return False
 	
 	
 	

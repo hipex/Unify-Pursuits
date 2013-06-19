@@ -14,6 +14,20 @@ def getTitle(parameter):
 	
 	return note.title
 	
+def getCalendarItems(mdb, parameter):
+ 	# return only notes with reminder / todo date
+	global evernoteInit
+	global datetime
+	
+	noteinfo = evernoteInit.note_store.getNote(evernoteInit.authToken, parameter, True, False, False, False)
+	if noteinfo.attributes.reminderTime != None:
+		noteTimestamp = noteinfo.attributes.reminderTime # given in miliseconds
+		
+		noteDatetime = datetime.fromtimestamp(noteTimestamp/1000).strftime('%Y-%m-%dT%H:%M:%S+01:00')
+		
+		item = {"start":noteDatetime, "end":noteDatetime, "summary":noteinfo.title}
+
+	return [item]
 
 	
 def add(parentParameter):
@@ -29,14 +43,14 @@ def add(parentParameter):
 	parameter = raw_input("choose parameter: ")
 	return [parameter]
 
-def update(mdb, parameter, itemID):
+def check(parameter):
 	global evernoteInit
 	
 	try:
 		evernoteInit.note_store.getNote(evernoteInit.authToken, parameter, False, False, False, False)
-	except evernoteInit.errorTypes.EDAMNotFoundException:
+	except (evernoteInit.errorTypes.EDAMNotFoundException, evernoteInit.errorTypes.EDAMUserException) as e:
 		# note note found
-		return itemID
+		return True
 	
 	# note was found
-	return 'none'
+	return False

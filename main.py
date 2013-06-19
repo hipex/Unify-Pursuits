@@ -122,7 +122,9 @@ while True:
 			
 			# strip the v
 			CURRENTitem[1] = int(answer[1:]) 
-			
+		elif answer == 'c':
+			# show current
+			pass	
 			
 		else:
 			# requested database item

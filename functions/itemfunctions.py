@@ -39,7 +39,7 @@ def getItemsByParent(mdb, modules, parentID):
 		child = cur.fetchone()
 		module = getattr(modules, parent['serviceModule'])
 		if hasattr(module, 'getVirtualItems'):
-			virtualItemlist = module.getVirtualItems(parent['parameter'], parent['itemID'], parent['serviceTitle'], parent['itemID'], child['serviceID'], child['serviceModule'])
+			virtualItemlist = module.getVirtualItems(parent['parameter'], parent['itemID'], parent['itemID'], child['serviceID'], child['serviceModule'])
 			virtualitems.extend(virtualItemlist)
 	
 	filteredVirtualitems = []
@@ -182,8 +182,17 @@ def showItem(mdb, modules, CURRENTitem, virtualitems={}):
 		widgets = cur.fetchall()
 	
 		for widget in widgets:
+			cur = mdb.con.cursor(mdb.cursors.DictCursor)
+			cur.execute("SELECT items.itemID, items.serviceID, items.parameter, services.serviceModule \
+			FROM items, WidgetToItem, services \
+			WHERE items.itemID=WidgetToItem.itemID \
+			AND items.serviceID=services.serviceID \
+			AND WidgetToItem.widgetID='"+str(widget['widgetID'])+"'")
+			items = cur.fetchall()	
+		
+		
 			widgettype = getattr(modules, widget['widgettypeModule'])
-			widgettype.show(mdb, modules, widget['widgetID'], widget['preferences'])
+			widgettype.show(modules, items, widget['widgetID'], widget['preferences'])
 		
 	
 		print "=========== SUB ITEMS =========="
@@ -244,10 +253,10 @@ def updateItems(mdb, modules):
 		
 		
 		module = getattr(modules, str(item['serviceModule']))
-		result = module.update(mdb, item['parameter'], item['itemID'])
+		result = module.check(item['parameter'])
 
-		if result != 'none':
-			removequery_parts.append("'"+str(result)+"'")
+		if result == False:
+			removequery_parts.append("'"+str(item['itemID'])+"'")
 			count=count+1
 		
 	if removequery_parts != []:
